@@ -6,7 +6,7 @@ const PORT = 8080;
 function generateRandomString() {
   while (true) {
     var uid = ("000000" + ((Math.random() * Math.pow(36, 6)) | 0).toString(36)).slice(-6);
-    
+
     return uid;
   }
 }
@@ -30,12 +30,10 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  const shortUrls = generateRandomString();  
-  const longURL = req.body.longURL;  
-  const newUrlDatabase = longURL;
-  urlDatabase[shortUrls] =newUrlDatabase;
-  res.redirect("/urls");
-  
+  const shortUrls = generateRandomString();
+  const longURL = req.body.longURL;
+  urlDatabase[shortUrls] = longURL;
+  res.redirect(`/urls/${shortUrls}`);
 });
 
 app.get("/urls/:id", (req, res) => {
