@@ -54,7 +54,7 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect(`/urls`);
  });
 
-//summit signin form and asign cookie value to username
+//summit login form and assign cookie value to username
 app.post("/login", (req, res) => {
   const username = req.body.username;
   res.cookie("username", username);
