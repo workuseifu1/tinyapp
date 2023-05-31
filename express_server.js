@@ -28,29 +28,38 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
-
+// create new longURl by generation shortURL
 app.post("/urls", (req, res) => {
-  const shortUrls = generateRandomString();
+  const shortUrl = generateRandomString();
   const longURL = req.body.longURL;
-  urlDatabase[shortUrls] = longURL;
-  res.redirect(`/urls/${shortUrls}`);
+  urlDatabase[shortUrl] = longURL;
+  res.redirect(`/urls/${shortUrl}`);
 });
 
 app.get("/urls/:id", (req, res) => {
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
   res.render("urls_show", templateVars);
 });
+// remove existing url
 app.post("/urls/:id/delete", (req, res) => {
   const id = req.params.id;
   delete urlDatabase[id];
   res.redirect("/urls");
 });
+//Update longURL
  app.post("/urls/:id", (req, res) => {
   const shortUrl = req.params.id;  
   const userInput = req.body.longURL; 
   urlDatabase[shortUrl] = userInput;
   res.redirect(`/urls`);
  });
+
+//summit signin form and asign cookie value to username
+app.post("/login", (req, res) => {
+  const username = req.body.username;
+  res.cookie("username", username);
+  res.redirect("/urls");
+});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
