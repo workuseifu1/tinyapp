@@ -89,14 +89,20 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect(`/urls`);
  });
 
-//summit login form and assign cookie value to username
+//summit login form and assign cookie value to user_id
 app.post("/login", (req, res) => {
+  const email = req.body.email;
+  const password  = req.body.password;
   let userID = undefined;
-  for (let id in users) {
-    if (users[id].email === req.body.email ) {
-      userID = id;
-      break;
-    }
+  for (let id in users) {   
+    if (!(users[id].email === email)) {
+      res.status(403).end('<p>user with that e-mail cannot be found</p>')
+    } 
+    if (!(users[id].password === password)) {
+      res.status(403).end('<p>Wrong password</p>')
+    } 
+      userID = id;  
+      break;    
   }
   res.cookie("user_id",userID);  
   res.redirect("/urls");
@@ -105,7 +111,7 @@ app.post("/login", (req, res) => {
 //clear user_id cookie and redirect back to the urls
 app.post("/logout", (req, res) => {  
   res.clearCookie("user_id");
-  res.redirect("/urls");
+  res.redirect("/login");
 }); 
 
 //Register form
@@ -133,6 +139,7 @@ app.post("/register", (req, res) => {
     email: email,
     password: password
   };  
+  console.log(users);
   res.cookie("user_id",userRandpmID);
   res.redirect("/urls")
 });
