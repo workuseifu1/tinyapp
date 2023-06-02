@@ -16,20 +16,20 @@
     />
     <title>TinyApp</title>
   </head>
-  <body>   
-    <%- include('partials/_header') %>    
-        <h1>Register</h1>
-        <form class="form-inline" method="POST" action="/register">
+  <body> 
+    <%- include('partials/_header') %>      
+        <h1>Login</h1>
+        <form class="form-inline" method="POST" action="/login">
           <div class="form-group mb-2">
             <label>
-                email:
-                <input type="email" name="email" class="form-control" placeholder="email" style="width: 300px; margin: 1em">
-            </label>
-            <label>
-                Password:
-                <input type="password" name="password" class="form-control" placeholder="password" style="width: 300px; margin: 1em">
-            </label>
-            <input type="submit" value="Register New Account">
+              email:
+              <input type="email" name="email" class="form-control" placeholder="email" style="width: 300px; margin: 1em">
+          </label>
+          <label>
+              Password:
+              <input type="password" name="password" class="form-control" placeholder="password" style="width: 300px; margin: 1em">
+          </label>
+          <input type="submit" value="Login">
           </div>
             
         </form>

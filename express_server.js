@@ -12,6 +12,17 @@ function generateRandomString() {
     return uid;
   }
 }
+
+// finding  a user in the users object
+const userLookUp = function(email) {
+  let user = null;
+  for (let id in users) {
+    if (users[id].email === email) {
+      user = id;      
+    }
+  }
+  return user;
+}
 // Middlewares API
 app.use(cookieParser())
 app.set("view engine", "ejs");
@@ -100,7 +111,8 @@ app.post("/logout", (req, res) => {
 //Register form
 
 app.get("/register", (req, res) =>{  
-  res.render("register");
+  const templateVars = {user:null}
+  res.render("register", templateVars);
 });
 
 //handle register form submistion
@@ -109,6 +121,13 @@ app.post("/register", (req, res) => {
   const userRandpmID = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
+  if (!email || !password) {
+    res.status(400).end('<p> Both email and password must be included in registration</p>');
+  }
+
+  if (userLookUp(email)) {
+    res.status(400).end('<p> A user with this email already exists</p>');
+  }
   users[userRandpmID] =  {
     id: userRandpmID ,
     email: email,
@@ -117,7 +136,14 @@ app.post("/register", (req, res) => {
   res.cookie("user_id",userRandpmID);
   res.redirect("/urls")
 });
+ 
+// endpoint responds for login form template
 
-app.listen(PORT, () => {
+app.get("/login", (req,res) => {
+  const templateVars = {user:null}
+  res.render("login",templateVars);
+});
+
+app.listen(PORT, () => {  
   console.log(`Example app listening on port ${PORT}!`);
 });
