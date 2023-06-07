@@ -1,6 +1,7 @@
 const express = require("express");
 const cookieParser = require('cookie-parser')
 const app = express();
+const bcrypt = require("bcryptjs");
 const PORT = 8080;
 
 
@@ -63,6 +64,17 @@ const urlsForUser = function (id) {
     }
   }
   return urls;
+};
+
+// fillter users by email
+
+const getUserByEmail = (email, users) => {
+  
+  for (let userID in users){
+    if(users[userID].email === email) {
+      return users[userID];
+    } 
+  } return null;
 };
 
 app.get("/", (req, res) => {
@@ -164,8 +176,6 @@ app.post("/urls/:id/delete", (req, res) => {
   if (!user) {
     return res.status(403).send('<p> Request to delete URL denied</p>');
   }
-  console.log(urlDatabase)
-  console.log(url)
   if (userRandomID !== urlDatabase[id].userID) {
     return res.status(403).send('<p>Request to delete URL denied</p>')
   }
@@ -187,29 +197,36 @@ app.post("/urls/:id", (req, res) => {
   }
 });
 
+//user login
+
+app.get("/login", (req, res) => {
+  let userID = req.cookies['user_id'];
+  res.render("login", {user: users[userID]});
+});
+
 //summit login form and assign cookie value to user_id
 app.post("/login", (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
+  let {email, password} = req.body;
+  let userObject = getUserByEmail(email,users);
+  const hashedPassword = bcrypt.hashSync(userObject.password, 10);
   if (!email || !password) {
     res.status(400).end('<p>You must provide an email and a passWord </p>')
-  }
-  let userID = userLookUp(email);
-  if (userID === null) {
+  }  
+  if (!userObject) {
     res.status(403).end('<p>user with that e-mail cannot be found</p>')
   }
-  if (users[userID].password !== password) {
+  if (!bcrypt.compareSync(password, hashedPassword)) {
     res.status(403).end('<p>Wrong password</p>')
-  }
-
-  res.cookie("user_id", userID);
+  } else {
+    res.cookie("user_id", userObject.id);
   res.redirect("/urls");
+  }  
 });
 
 //clear user_id cookie and redirect back to the urls
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
-  res.redirect("/urls");
+  res.redirect("/login");
 });
 
 //Register form
@@ -224,6 +241,7 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
   if (!email || !password) {
     res.status(400).end('<p> Both email and password must be included in registration</p>');
   }
@@ -232,14 +250,14 @@ app.post("/register", (req, res) => {
     res.status(400).end('<p> A user with this email already exists</p>');
   }
 
-  const userRandpmID = generateRandomString();
-  users[userRandpmID] = {
-    id: userRandpmID,
+  const userID = generateRandomString();
+  users[userID] = {
+    id: userID,
     email: email,
-    password: password
+    password: hashedPassword
   };
   
-  res.cookie("user_id", userRandpmID);
+  res.cookie("user_id", userID);
   res.redirect("/urls")
 });
 
