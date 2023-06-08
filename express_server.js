@@ -7,10 +7,8 @@ const PORT = 8080;
 
 
 // Middlewares API
-// app.use(cookieParser())
 app.set("view engine", "ejs"); // configuration
 app.use(express.urlencoded({ extended: true }));
-
 app.use(cookieSession({
   name: 'session',
   keys: ['qazwsx'],
@@ -49,15 +47,12 @@ const users = {
 
 // generate a string of 6 alphanumeric characters
 function generateRandomString() {
-  var uid = ("000000" + ((Math.random() * Math.pow(36, 6)) | 0).toString(36)).slice(-6);
-
-  return uid;
-
+  var userid = ("000000" + ((Math.random() * Math.pow(36, 6)) | 0).toString(36)).slice(-6);
+  return userid;
 };
 
 //a function which returns URLs for where the userID is equal to the id of current loged in user
-const urlsForUser = function (id) {
-  
+const urlsForUser = function (id) {  
   let urls = {};
   for (let key in urlDatabase) {
     if (urlDatabase[key].userID === id) {
@@ -66,8 +61,7 @@ const urlsForUser = function (id) {
   }
   return urls;
 };
-
-
+//only Logged in users have access to urls
 app.get("/", (req, res) => {
   const user = req.body.id;
   if (user) {
@@ -89,89 +83,68 @@ app.get("/urls", (req, res) => {
   }
   res.render("urls_index", templateVars);
 });
-//create new longURl by generation shortURL
+//only logged in users create new longURl by generating shortURL
 app.get("/urls/new", (req, res) => {
   const userID = req.session.user_id;
-  // const templateVars = {
-  //   user: users[userID],
-  //   user_id: req.cookies["user_id"]
-  // }
   const templateVars = {
     user: users[userID],
     userID: userID
   };
-  if (userID) {
-    
+  if (userID) {    
     return res.render("urls_new", templateVars);
   } else {
     return res.redirect("/login");
   }
 });
+
+//Only logged in users have access to shorturl and corresponding id
+app.get("/urls/:id", (req, res) => {
+  let shortURL = req.params.id;
+  let key = urlDatabase[shortURL];
+  let userID = req.session.user_id;
+  if (!userID) {
+    return res.status(403).send('<p>Please login</p>');
+  }
+  if (!key) {
+    return res.status(404).send(`<p>No URl with that Id exists </p>`);
+  }
+  const templateVars = {
+    shortURL,
+    longURL: urlDatabase[shortURL].longURL,
+    user: users["user_id"]
+  };
+   res.render("urls_show", templateVars);
+});
+
+//Checks if url for the given id exist redirect to longurl
 app.get("/u/:shortURL", (req, res) => {
   let shortURL = req.params.shortURL;
   let longURL = urlDatabase[shortURL].longURL;
   if (!longURL) {
-    res.status(403).send("No URL with that ID exists.")
+    res.status(403).send("No URL with that ID exists.");
     } else {
   res.redirect(longURL);
  }
 });
-// handle new longURl by generation shortURL
+// if user is loged in then new longURl by generates shortURL and associates with the user
 app.post("/urls", (req, res) => {
   const shortUrl = generateRandomString();  
   const longURL = req.body.longURL;
-  const userID = req.session.user_id;
-  
+  const userID = req.session.user_id;  
   let newObj = { longURL: longURL, userID:  userID };
 
   if (!userID) {
     return res.status(403).send('<p>You must login first </p>');
   }
-  if (longURL) {
-    
-    urlDatabase[shortUrl] = newObj;
-    
+  if (longURL) {    
+    urlDatabase[shortUrl] = newObj;    
     res.redirect(`/urls/${shortUrl}`);
   } else {
     res.status(403).send('<p>Invalid</p>');
   }
 });
 
-app.get("/urls/:id", (req, res) => {
-  let shortURL = req.params.id;
-  let key = urlDatabase[shortURL];
-  let userID = req.session.user_id
-  if (!userID) {
-    return res.status(403).send('<p>Please login</p>')
-  }
-  if (!key) {
-    return res.status(404).send(`<p>No URl with that Id exists </p>`)
-  }
-  const templateVars = {
-    shortURL,
-    longURL: urlDatabase[shortURL].longURL,
-    // user_id: req.session.user_id,
-    // email: req.session.email,
-    user: users["user_id"]
-  };
-   res.render("urls_show", templateVars);
-});
-// remove existing url
-app.post("/urls/:id/delete", (req, res) => {
-  const id = req.params.id;
-  const url = urlDatabase[id];
-  const userID = req.session.user_id;
-  const user = users[userID];
-  if (!user) {
-    return res.status(403).send('<p> Request to delete URL denied</p>');
-  }
-  if (userID !== urlDatabase[id].userID) {
-    return res.status(403).send('<p>Request to delete URL denied</p>')
-  }
-  delete urlDatabase[id];
-  res.redirect("/urls");
-});
-//Update longURL
+//only a user can update url for given own id
 app.post("/urls/:id", (req, res) => {
   const shortUrl = req.params.id;  
   const longURL  = req.body.longURL;
@@ -188,12 +161,36 @@ app.post("/urls/:id", (req, res) => {
   }
 });
 
+// only a user logged in owns the url can delete
+app.post("/urls/:id/delete", (req, res) => {
+  const id = req.params.id;
+  const url = urlDatabase[id];
+  const userID = req.session.user_id;
+  const user = users[userID];
+  if (!user) {
+    return res.status(403).send('<p> Request to delete URL denied</p>');
+  }
+  if (userID !== urlDatabase[id].userID) {
+    return res.status(403).send('<p>Request to delete URL denied</p>');
+  }
+  delete urlDatabase[id];
+  res.redirect("/urls");
+});
+
 //user login
 
 app.get("/login", (req, res) => {
   let userID = req.session.user_id;
   res.render("login", {user: users[userID]});
 });
+
+//user register
+
+app.get("/register", (req, res) => {
+  const templateVars = { user: null }
+  res.render("register", templateVars);
+});
+
 
 //summit login form and assign cookie value to user_id
 app.post("/login", (req, res) => {
@@ -211,22 +208,6 @@ app.post("/login", (req, res) => {
     req.session.user_id = userObject.id;
   res.redirect("/urls");
   }  
-});
-
-//clear user_id cookie and redirect back to the urls
-app.post("/logout", (req, res) => {
-  req.session = null;
-  res.redirect("/login");
-});
-
-
-
-
-//Register form
-
-app.get("/register", (req, res) => {
-  const templateVars = { user: null }
-  res.render("register", templateVars);
 });
 
 //handle register form submistion
@@ -253,12 +234,13 @@ app.post("/register", (req, res) => {
   res.redirect("/urls")
 });
 
-// endpoint responds for login form template
 
-app.get("/login", (req, res) => {
-  const templateVars = { user: null }
-  res.render("login", templateVars);
+//clear user_id cookie and redirect back to the urls
+app.post("/logout", (req, res) => {
+  req.session = null;
+  res.redirect("/login");
 });
+
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
